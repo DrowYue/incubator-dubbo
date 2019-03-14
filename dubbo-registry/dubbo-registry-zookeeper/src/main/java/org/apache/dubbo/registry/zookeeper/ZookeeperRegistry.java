@@ -18,8 +18,10 @@ package org.apache.dubbo.registry.zookeeper;
 
 import org.apache.dubbo.common.Constants;
 import org.apache.dubbo.common.URL;
+import org.apache.dubbo.common.URLBuilder;
 import org.apache.dubbo.common.logger.Logger;
 import org.apache.dubbo.common.logger.LoggerFactory;
+import org.apache.dubbo.common.utils.CollectionUtils;
 import org.apache.dubbo.common.utils.ConcurrentHashSet;
 import org.apache.dubbo.common.utils.UrlUtils;
 import org.apache.dubbo.registry.NotifyListener;
@@ -76,18 +78,6 @@ public class ZookeeperRegistry extends FailbackRegistry {
                 }
             }
         });
-    }
-
-    static String appendDefaultPort(String address) {
-        if (address != null && address.length() > 0) {
-            int i = address.indexOf(':');
-            if (i < 0) {
-                return address + ":" + DEFAULT_ZOOKEEPER_PORT;
-            } else if (Integer.parseInt(address.substring(i + 1)) == 0) {
-                return address.substring(0, i + 1) + DEFAULT_ZOOKEEPER_PORT;
-            }
-        }
-        return address;
     }
 
     @Override
@@ -149,7 +139,7 @@ public class ZookeeperRegistry extends FailbackRegistry {
                 }
                 zkClient.create(root, false);
                 List<String> services = zkClient.addChildListener(root, zkListener);
-                if (services != null && !services.isEmpty()) {
+                if (CollectionUtils.isNotEmpty(services)) {
                     for (String service : services) {
                         service = URL.decode(service);
                         anyServices.add(service);
@@ -264,7 +254,7 @@ public class ZookeeperRegistry extends FailbackRegistry {
 
     private List<URL> toUrlsWithoutEmpty(URL consumer, List<String> providers) {
         List<URL> urls = new ArrayList<>();
-        if (providers != null && !providers.isEmpty()) {
+        if (CollectionUtils.isNotEmpty(providers)) {
             for (String provider : providers) {
                 provider = URL.decode(provider);
                 if (provider.contains(Constants.PROTOCOL_SEPARATOR)) {
@@ -283,7 +273,10 @@ public class ZookeeperRegistry extends FailbackRegistry {
         if (urls == null || urls.isEmpty()) {
             int i = path.lastIndexOf(Constants.PATH_SEPARATOR);
             String category = i < 0 ? path : path.substring(i + 1);
-            URL empty = consumer.setProtocol(Constants.EMPTY_PROTOCOL).addParameter(Constants.CATEGORY_KEY, category);
+            URL empty = URLBuilder.from(consumer)
+                    .setProtocol(Constants.EMPTY_PROTOCOL)
+                    .addParameter(Constants.CATEGORY_KEY, category)
+                    .build();
             urls.add(empty);
         }
         return urls;
