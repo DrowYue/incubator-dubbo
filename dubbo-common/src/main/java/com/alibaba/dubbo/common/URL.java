@@ -65,6 +65,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * for this case, url protocol = null, url host = home, url path = user1/router.js
  * </ul>
  *
+ * 格式：protocol://username:password@host:port/path?key=value&key=value
+ * 所有配置最终都将转换为 URL 表示，并由服务提供方生成，经注册中心传递给消费方，各属性对应 URL 的参数，参见配置项一览表中的 "对应URL参数" 列。
+ *
  * @see java.net.URL
  * @see java.net.URI
  */

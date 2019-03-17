@@ -42,6 +42,7 @@ public class DubboNamespaceHandler extends NamespaceHandlerSupport {
 
     @Override
     public void init() {
+        // 解析以下配置
         registerBeanDefinitionParser("application", new DubboBeanDefinitionParser(ApplicationConfig.class, true));
         registerBeanDefinitionParser("module", new DubboBeanDefinitionParser(ModuleConfig.class, true));
         registerBeanDefinitionParser("registry", new DubboBeanDefinitionParser(RegistryConfig.class, true));
