@@ -122,22 +122,31 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
         return service;
     }
 
+    /**
+     * 服务导出的入口方法
+     */
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) {
+        // 是否有延迟导出 && 是否已导出 && 是不是已被取消导出
+        // isDelay() 方法返回 true 时，表示无需延迟导出。返回 false 时，表示需要延迟导出
         if (isDelay() && !isExported() && !isUnexported()) {
             if (logger.isInfoEnabled()) {
                 logger.info("The service ready on spring started. service: " + getInterface());
             }
+            // 导出服务
             export();
         }
     }
 
     private boolean isDelay() {
+        // 获取 delay
         Integer delay = getDelay();
         ProviderConfig provider = getProvider();
         if (delay == null && provider != null) {
+            // 如果前面获取的 delay 为空，这里继续获取
             delay = provider.getDelay();
         }
+        // 判断 delay 是否为空，或者等于 -1
         return supportedApplicationListener && (delay == null || delay == -1);
     }
 
