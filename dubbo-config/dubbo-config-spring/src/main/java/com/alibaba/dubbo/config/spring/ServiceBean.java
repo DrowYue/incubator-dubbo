@@ -146,10 +146,14 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
             // 如果前面获取的 delay 为空，这里继续获取
             delay = provider.getDelay();
         }
-        // 判断 delay 是否为空，或者等于 -1
+        // 判断 delay 是否为空，或者等于 -1，延迟到 Spring 初始化完成后，再暴露服务
         return supportedApplicationListener && (delay == null || delay == -1);
     }
 
+    /**
+     * 实现了 InitializingBean 接口
+     *
+     */
     @Override
     @SuppressWarnings({"unchecked", "deprecation"})
     public void afterPropertiesSet() throws Exception {

@@ -20,6 +20,12 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 public class Provider {
 
+    /**
+     * ZooKeeper:
+     *
+     * dubbo://10.120.220.242:20890/com.alibaba.dubbo.demo.DemoService?anyhost=true&application=demo-provider&bean.name=com.alibaba.dubbo.demo.DemoService&dubbo=2.0.2&generic=false&interface=com.alibaba.dubbo.demo.DemoService&methods=sayHello&pid=15776&side=provider&timestamp=1552987554965
+     *
+     */
     public static void main(String[] args) throws Exception {
         //Prevent to get IPV6 address,this way only work in debug mode
         //But you can pass use -Djava.net.preferIPv4Stack=true,then it work well whether in debug mode or not

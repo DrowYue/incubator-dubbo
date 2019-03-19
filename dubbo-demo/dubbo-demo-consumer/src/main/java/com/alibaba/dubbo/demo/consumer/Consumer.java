@@ -21,6 +21,12 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 public class Consumer {
 
+    /**
+     * ZooKeeper:
+     *
+     * consumer://10.120.220.242/com.alibaba.dubbo.demo.DemoService?application=demo-consumer&category=consumers&check=false&dubbo=2.0.2&interface=com.alibaba.dubbo.demo.DemoService&methods=sayHello&pid=13328&qos.port=33333&side=consumer&timeout=100000&timestamp=1552987587570
+     *
+     */
     public static void main(String[] args) {
         //Prevent to get IPV6 address,this way only work in debug mode
         //But you can pass use -Djava.net.preferIPv4Stack=true,then it work well whether in debug mode or not
