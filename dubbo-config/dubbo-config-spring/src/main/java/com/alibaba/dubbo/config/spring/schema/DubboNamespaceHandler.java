@@ -31,6 +31,7 @@ import org.springframework.beans.factory.xml.NamespaceHandlerSupport;
 
 /**
  * DubboNamespaceHandler
+ * Spring提供了 XML Schema可扩展机制，用户可以自定义 XML Schema文件，并自定义 XML Bean 解析器，并集成到 Spring Ioc 容器中
  *
  * @export
  */

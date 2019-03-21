@@ -170,6 +170,10 @@ public final class Version {
         checkDuplicate(cls.getName().replace('.', '/') + ".class", failOnError);
     }
 
+    /**
+     * 检查 classpath 下是否有同名的class，存在则报异常
+     * @param cls
+     */
     public static void checkDuplicate(Class<?> cls) {
         checkDuplicate(cls, false);
     }
