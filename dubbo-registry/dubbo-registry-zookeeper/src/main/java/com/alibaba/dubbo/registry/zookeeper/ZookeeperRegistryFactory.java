@@ -28,7 +28,7 @@ import com.alibaba.dubbo.remoting.zookeeper.ZookeeperTransporter;
 public class ZookeeperRegistryFactory extends AbstractRegistryFactory {
 
     /**
-     * Zookeeper 工厂
+     * zookeeperTransporter 由 SPI 在运行时注入，类型为 ZookeeperTransporter$Adaptive
      */
     private ZookeeperTransporter zookeeperTransporter;
 

@@ -24,6 +24,8 @@ import com.alibaba.dubbo.remoting.transport.ChannelHandlerDispatcher;
 
 /**
  * Transporter facade. (API, Static, ThreadSafe)
+ *
+ * Transporter 门面类，参见 Facade 设计模式。
  */
 public class Transporters {
 
@@ -51,6 +53,7 @@ public class Transporters {
         if (handlers.length == 1) {
             handler = handlers[0];
         } else {
+            // 如果 handlers 元素数量大于1，则创建 ChannelHandler 分发器
             handler = new ChannelHandlerDispatcher(handlers);
         }
         return getTransporter().bind(url, handler);

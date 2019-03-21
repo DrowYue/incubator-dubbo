@@ -55,17 +55,37 @@ import static com.alibaba.dubbo.common.Constants.VALIDATION_KEY;
 /**
  * RegistryProtocol
  *
+ * 注册中心协议实现类。
  */
 public class RegistryProtocol implements Protocol {
 
     private final static Logger logger = LoggerFactory.getLogger(RegistryProtocol.class);
+
+    /**
+     * 单例。在 Dubbo SPI 中，被初始化，有且仅有一次。
+     */
     private static RegistryProtocol INSTANCE;
     private final Map<URL, NotifyListener> overrideListeners = new ConcurrentHashMap<URL, NotifyListener>();
+
+    /**
+     * 绑定关系集合。
+     *
+     * key：服务 Dubbo URL
+     */
     //To solve the problem of RMI repeated exposure port conflicts, the services that have been exposed are no longer exposed.
+    // 用于解决rmi重复暴露端口冲突的问题，已经暴露过的服务不再重新暴露
     //providerurl <--> exporter
     private final Map<String, ExporterChangeableWrapper<?>> bounds = new ConcurrentHashMap<String, ExporterChangeableWrapper<?>>();
     private Cluster cluster;
+
+    /**
+     * Protocol 自适应拓展实现类，通过 Dubbo SPI 自动注入。
+     */
     private Protocol protocol;
+
+    /**
+     * RegistryFactory 自适应拓展实现类，通过 Dubbo SPI 自动注入。
+     */
     private RegistryFactory registryFactory;
     private ProxyFactory proxyFactory;
 
@@ -122,7 +142,9 @@ public class RegistryProtocol implements Protocol {
     }
 
     public void register(URL registryUrl, URL registedProviderUrl) {
+        // 获取 Registry
         Registry registry = registryFactory.getRegistry(registryUrl);
+        // 注册服务
         registry.register(registedProviderUrl);
     }
 
@@ -159,7 +181,7 @@ public class RegistryProtocol implements Protocol {
 
         // 根据 register 的值决定是否注册服务
         if (register) {
-            // 根据 register 的值决定是否注册服务
+            // 注册服务
             register(registryUrl, registeredProviderUrl);
             ProviderConsumerRegTable.getProviderWrapper(originInvoker).setReg(true);
         }
@@ -181,14 +203,20 @@ public class RegistryProtocol implements Protocol {
 
     @SuppressWarnings("unchecked")
     private <T> ExporterChangeableWrapper<T> doLocalExport(final Invoker<T> originInvoker) {
+        // 访问缓存
         String key = getCacheKey(originInvoker);
         ExporterChangeableWrapper<T> exporter = (ExporterChangeableWrapper<T>) bounds.get(key);
+
+        // 双重检查锁
         if (exporter == null) {
             synchronized (bounds) {
                 exporter = (ExporterChangeableWrapper<T>) bounds.get(key);
                 if (exporter == null) {
+                    // 创建 Invoker 为委托类对象
                     final Invoker<?> invokerDelegete = new InvokerDelegete<T>(originInvoker, getProviderUrl(originInvoker));
+                    // 调用 protocol 的 export 方法导出服务
                     exporter = new ExporterChangeableWrapper<T>((Exporter<T>) protocol.export(invokerDelegete), originInvoker);
+                    // 写缓存
                     bounds.put(key, exporter);
                 }
             }
@@ -347,6 +375,12 @@ public class RegistryProtocol implements Protocol {
     }
 
     public static class InvokerDelegete<T> extends InvokerWrapper<T> {
+
+        /**
+         * Invoker 对象
+         *
+         * 因为父类未提供 invoker 属性的获取方法，因此这里增加了和父类 invoker 一样的这个属性。
+         */
         private final Invoker<T> invoker;
 
         /**
@@ -451,6 +485,8 @@ public class RegistryProtocol implements Protocol {
 
     /**
      * exporter proxy, establish the corresponding relationship between the returned exporter and the exporter exported by the protocol, and can modify the relationship at the time of override.
+     *
+     * exporter 代理, 建立返回的 exporter 与 protocol export 出的 exporter 的对应关系，在 override 时可以进行关系修改.
      *
      * @param <T>
      */

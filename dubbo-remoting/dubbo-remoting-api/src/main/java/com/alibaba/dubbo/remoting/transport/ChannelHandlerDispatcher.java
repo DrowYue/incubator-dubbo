@@ -27,6 +27,8 @@ import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
  * ChannelListenerDispatcher
+ *
+ * 通道处理器集合，是一组 ChannelHandler 的集合。
  */
 public class ChannelHandlerDispatcher implements ChannelHandler {
 

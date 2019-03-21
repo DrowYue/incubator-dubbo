@@ -80,13 +80,14 @@ public class ZookeeperRegistry extends FailbackRegistry {
         if (url.isAnyHost()) {
             throw new IllegalStateException("registry address == null");
         }
-        // 获得 Zookeeper 根节点
+        // 获得组名，默认为 dubbo
         String group = url.getParameter(Constants.GROUP_KEY, DEFAULT_ROOT);
         if (!group.startsWith(Constants.PATH_SEPARATOR)) {
+            // group = "/" + group
             group = Constants.PATH_SEPARATOR + group;
         }
         this.root = group;
-        // 创建 Zookeeper Client
+        // 创建 Zookeeper Client，默认为 CuratorZookeeperTransporter
         zkClient = zookeeperTransporter.connect(url);
         // 添加 StateListener 对象。该监听器，在重连时，调用恢复方法。
         zkClient.addStateListener(new StateListener() {
