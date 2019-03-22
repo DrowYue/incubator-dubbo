@@ -48,7 +48,14 @@ import java.util.Map;
 /**
  * ServiceFactoryBean
  *
- * @export
+ * Bean的生命周期，执行顺序：
+ * 1. BeanNameAware#setBeanName
+ * 2. ApplicationContextAware#setApplicationContext
+ * 3. InitializingBean#afterPropertiesSet
+ * 4. DisposableBean#destroy
+ *
+ * ApplicationEventPublisherAware 服务导出完成时发布 ServiceBeanExportedEvent 事件
+ * ApplicationListener 监听 ContextRefreshedEvent 事件
  */
 public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean, DisposableBean,
         ApplicationContextAware, ApplicationListener<ContextRefreshedEvent>, BeanNameAware,
@@ -123,7 +130,7 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
     }
 
     /**
-     * 服务导出的入口方法
+     * 当Spring容器初始化完成时触发 ContextRefreshedEvent ，该方法为服务导出的入口
      */
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) {
@@ -152,7 +159,7 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
 
     /**
      * 实现了 InitializingBean 接口
-     *
+     * 从 ApplicationContext 中初始化各类属性
      */
     @Override
     @SuppressWarnings({"unchecked", "deprecation"})
