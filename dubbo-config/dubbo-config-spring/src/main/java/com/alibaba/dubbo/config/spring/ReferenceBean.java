@@ -40,6 +40,8 @@ import java.util.Map;
 /**
  * ReferenceFactoryBean
  *
+ * FactoryBean#getObject
+ *
  * @export
  */
 public class ReferenceBean<T> extends ReferenceConfig<T> implements FactoryBean, ApplicationContextAware, InitializingBean, DisposableBean {

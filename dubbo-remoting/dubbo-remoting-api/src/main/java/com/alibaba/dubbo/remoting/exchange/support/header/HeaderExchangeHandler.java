@@ -37,6 +37,8 @@ import java.net.InetSocketAddress;
 
 /**
  * ExchangeReceiver
+ *
+ * 基于消息头部( Header )的信息交换处理器实现类
  */
 public class HeaderExchangeHandler implements ChannelHandlerDelegate {
 

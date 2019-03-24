@@ -45,30 +45,74 @@ import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * AbstractClient
+ *
+ * Client 抽象类，实现了重连逻辑
  */
 public abstract class AbstractClient extends AbstractEndpoint implements Client {
 
     protected static final String CLIENT_THREAD_POOL_NAME = "DubboClientHandler";
     private static final Logger logger = LoggerFactory.getLogger(AbstractClient.class);
     private static final AtomicInteger CLIENT_THREAD_POOL_ID = new AtomicInteger();
+
+    /**
+     * 重连定时任务执行器
+     */
     private static final ScheduledThreadPoolExecutor reconnectExecutorService = new ScheduledThreadPoolExecutor(2, new NamedThreadFactory("DubboClientReconnectTimer", true));
+
+    /**
+     * 连接锁，用于实现发起连接和断开连接互斥，避免并发。
+     */
     private final Lock connectLock = new ReentrantLock();
+
+    /**
+     * 发送消息时，若断开，是否重连
+     */
     private final boolean send_reconnect;
+
+    /**
+     * 重连次数
+     */
     private final AtomicInteger reconnect_count = new AtomicInteger(0);
+
+    /**
+     * 重连时，是否已经打印过错误日志。
+     */
     // Reconnection error log has been called before?
     private final AtomicBoolean reconnect_error_log_flag = new AtomicBoolean(false);
+
+    /**
+     * 重连 warning 的间隔.(waring多少次之后，warning一次) //for test
+     */
     // reconnect warning period. Reconnect warning interval (log warning after how many times) //for test
     private final int reconnect_warning_period;
+
+    /**
+     * 关闭超时时间
+     */
     private final long shutdown_timeout;
+
+    /**
+     * 线程池
+     *
+     * 在调用 {@link #wrapChannelHandler(URL, ChannelHandler)} 时，会调用 {@link com.alibaba.dubbo.remoting.transport.dispatcher.WrappedChannelHandler} 创建
+     */
     protected volatile ExecutorService executor;
+
+    /**
+     * 重连执行任务 Future
+     */
     private volatile ScheduledFuture<?> reconnectExecutorFuture = null;
+
+    /**
+     * 最后成功连接时间
+     */
     // the last successed connected time
     private long lastConnectedTime = System.currentTimeMillis();
 
 
     public AbstractClient(URL url, ChannelHandler handler) throws RemotingException {
         super(url, handler);
-
+        // 从 URL 中，获得重连相关配置项
         send_reconnect = url.getParameter(Constants.SEND_RECONNECT_KEY, false);
 
         shutdown_timeout = url.getParameter(Constants.SHUTDOWN_TIMEOUT_KEY, Constants.DEFAULT_SHUTDOWN_TIMEOUT);
@@ -77,13 +121,17 @@ public abstract class AbstractClient extends AbstractEndpoint implements Client 
         reconnect_warning_period = url.getParameter("reconnect.waring.period", 1800);
 
         try {
+            // 初始化客户端
             doOpen();
         } catch (Throwable t) {
+            // 失败，则关闭
             close();
             throw new RemotingException(url.toInetSocketAddress(), null,
                     "Failed to start " + getClass().getSimpleName() + " " + NetUtils.getLocalAddress()
                             + " connect to the server " + getRemoteAddress() + ", cause: " + t.getMessage(), t);
         }
+
+        // 连接服务器
         try {
             // connect.
             connect();
@@ -105,12 +153,20 @@ public abstract class AbstractClient extends AbstractEndpoint implements Client 
                             + " connect to the server " + getRemoteAddress() + ", cause: " + t.getMessage(), t);
         }
 
+        // 获得线程池
         executor = (ExecutorService) ExtensionLoader.getExtensionLoader(DataStore.class)
                 .getDefaultExtension().get(Constants.CONSUMER_SIDE, Integer.toString(url.getPort()));
         ExtensionLoader.getExtensionLoader(DataStore.class)
                 .getDefaultExtension().remove(Constants.CONSUMER_SIDE, Integer.toString(url.getPort()));
     }
 
+    /**
+     * 包装通道处理器
+     *
+     * @param url URL
+     * @param handler 被包装的通道处理器
+     * @return 包装后的通道处理器
+     */
     protected static ChannelHandler wrapChannelHandler(URL url, ChannelHandler handler) {
         url = ExecutorUtil.setThreadName(url, CLIENT_THREAD_POOL_NAME);
         url = url.addParameterIfAbsent(Constants.THREADPOOL_KEY, Constants.DEFAULT_CLIENT_THREADPOOL);
