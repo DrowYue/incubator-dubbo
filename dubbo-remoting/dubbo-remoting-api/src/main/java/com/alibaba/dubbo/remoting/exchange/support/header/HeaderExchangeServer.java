@@ -63,12 +63,15 @@ public class HeaderExchangeServer implements ExchangeServer {
         if (server == null) {
             throw new IllegalArgumentException("server == null");
         }
+        // 读取心跳相关配置
         this.server = server;
         this.heartbeat = server.getUrl().getParameter(Constants.HEARTBEAT_KEY, 0);
         this.heartbeatTimeout = server.getUrl().getParameter(Constants.HEARTBEAT_TIMEOUT_KEY, heartbeat * 3);
         if (heartbeatTimeout < heartbeat * 2) {
             throw new IllegalStateException("heartbeatTimeout < heartbeatInterval * 2");
         }
+
+        // 发起心跳定时器
         startHeartbeatTimer();
     }
 

@@ -28,7 +28,7 @@ import com.alibaba.dubbo.remoting.transport.DecodeHandler;
 /**
  * DefaultMessenger
  *
- *
+ * 基于消息头部( Header )的信息交换者实现类
  */
 public class HeaderExchanger implements Exchanger {
 
@@ -45,6 +45,7 @@ public class HeaderExchanger implements Exchanger {
         //   1. new HeaderExchangeHandler(handler)
         //	 2. new DecodeHandler(new HeaderExchangeHandler(handler))
         //   3. Transporters.bind(url, new DecodeHandler(new HeaderExchangeHandler(handler)))
+        //   4. 创建心跳定时器
         return new HeaderExchangeServer(Transporters.bind(url, new DecodeHandler(new HeaderExchangeHandler(handler))));
     }
 

@@ -26,6 +26,7 @@ import com.alibaba.dubbo.remoting.transport.MultiMessageHandler;
 
 public class ChannelHandlers {
 
+    // 单例
     private static ChannelHandlers INSTANCE = new ChannelHandlers();
 
     protected ChannelHandlers() {
@@ -44,6 +45,8 @@ public class ChannelHandlers {
     }
 
     protected ChannelHandler wrapInternal(ChannelHandler handler, URL url) {
+        // 1. 默认 AllDispatcher#dispatch，handler 是 DubboProtocol#requestHandler，在 dispatch 中创建对应的线程池，默认200
+        // 2. 加入HeartbeatHandler
         return new MultiMessageHandler(new HeartbeatHandler(ExtensionLoader.getExtensionLoader(Dispatcher.class)
                 .getAdaptiveExtension().dispatch(handler, url)));
     }

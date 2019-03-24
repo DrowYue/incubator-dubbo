@@ -81,6 +81,16 @@ public abstract class AbstractProxyInvoker<T> implements Invoker<T> {
         }
     }
 
+    /**
+     * 执行调用
+     *
+     * @param proxy 代理的对象
+     * @param methodName 方法名
+     * @param parameterTypes 方法参数类型数组
+     * @param arguments 方法参数数组
+     * @return 调用结果
+     * @throws Throwable 发生异常
+     */
     protected abstract Object doInvoke(T proxy, String methodName, Class<?>[] parameterTypes, Object[] arguments) throws Throwable;
 
     @Override

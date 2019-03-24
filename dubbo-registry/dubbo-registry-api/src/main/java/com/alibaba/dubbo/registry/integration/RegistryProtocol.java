@@ -79,12 +79,13 @@ public class RegistryProtocol implements Protocol {
     private Cluster cluster;
 
     /**
-     * Protocol 自适应拓展实现类，通过 Dubbo SPI 自动注入。
+     * Protocol 自适应拓展实现类，通过 Dubbo SPI 自动注入
+     * Dubbo Protocol
      */
     private Protocol protocol;
 
     /**
-     * RegistryFactory 自适应拓展实现类，通过 Dubbo SPI 自动注入。
+     * RegistryFactory 自适应拓展实现类，通过 Dubbo SPI 自动注入, 默认 DubboRegistryFactory，参数指定 ZookeeperRegistryFacotry
      */
     private RegistryFactory registryFactory;
     private ProxyFactory proxyFactory;
@@ -142,9 +143,9 @@ public class RegistryProtocol implements Protocol {
     }
 
     public void register(URL registryUrl, URL registedProviderUrl) {
-        // 获取 Registry
+        // 获取 Registry （ZookeeperRegistryFacotry）
         Registry registry = registryFactory.getRegistry(registryUrl);
-        // 注册服务
+        // 注册服务，ZookeeperRegistry 继承 FailbackRegistry#register
         registry.register(registedProviderUrl);
     }
 
@@ -156,7 +157,7 @@ public class RegistryProtocol implements Protocol {
      */
     @Override
     public <T> Exporter<T> export(final Invoker<T> originInvoker) throws RpcException {
-        // 导出服务
+        // 本地启动服务（创建Handler、NettyServer）
         final ExporterChangeableWrapper<T> exporter = doLocalExport(originInvoker);
 
         // 获取注册中心 URL，以 zookeeper 注册中心为例，得到的示例 URL 如下：
@@ -167,8 +168,10 @@ public class RegistryProtocol implements Protocol {
         // %3D22222%26side%3Dprovider%26timestamp%3D1553100090775&group=dubbo&pid=23592&qos.port=22222&timestamp=1553100088621
         URL registryUrl = getRegistryUrl(originInvoker);
 
+        // 创建与注册中心的连接
         // 根据 URL 加载 Registry 实现类，比如 ZookeeperRegistry
         final Registry registry = getRegistry(originInvoker);
+
         // 获取已注册的服务提供者 URL，比如：
         // dubbo://172.17.48.52:20880/com.alibaba.dubbo.demo.DemoService?anyhost=true&application=demo-provider&dubbo=2.0.2&generic=false&interface=com.alibaba.dubbo.demo.DemoService&methods=sayHello
         final URL registeredProviderUrl = getRegisteredProviderUrl(originInvoker);
@@ -176,13 +179,14 @@ public class RegistryProtocol implements Protocol {
         // 获取 register 参数
         boolean register = registeredProviderUrl.getParameter("register", true);
 
-        // 向服务提供者与消费者注册表中注册服务提供者
+        // 向本地注册表，注册服务提供者
         ProviderConsumerRegTable.registerProvider(originInvoker, registryUrl, registeredProviderUrl);
 
-        // 根据 register 的值决定是否注册服务
+        // 向注册中心注册服务提供者（自己）
         if (register) {
-            // 注册服务
+            // 向注册中心注册服务
             register(registryUrl, registeredProviderUrl);
+            // 标记向本地注册表的注册服务提供者，已经注册
             ProviderConsumerRegTable.getProviderWrapper(originInvoker).setReg(true);
         }
 
@@ -214,7 +218,7 @@ public class RegistryProtocol implements Protocol {
                 if (exporter == null) {
                     // 创建 Invoker 为委托类对象
                     final Invoker<?> invokerDelegete = new InvokerDelegete<T>(originInvoker, getProviderUrl(originInvoker));
-                    // 调用 protocol 的 export 方法导出服务
+                    // 调用 DubboProtocol#export 的 export 方法导出服务
                     exporter = new ExporterChangeableWrapper<T>((Exporter<T>) protocol.export(invokerDelegete), originInvoker);
                     // 写缓存
                     bounds.put(key, exporter);

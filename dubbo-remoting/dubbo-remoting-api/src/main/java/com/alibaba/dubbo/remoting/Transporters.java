@@ -79,6 +79,7 @@ public class Transporters {
     }
 
     public static Transporter getTransporter() {
+        // NettyTransporter
         return ExtensionLoader.getExtensionLoader(Transporter.class).getAdaptiveExtension();
     }
 

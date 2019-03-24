@@ -73,6 +73,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
 
     /**
      * 自适应 Protocol 实现对象
+     * 对于 Protocol 自适应生成的 Protocol$Adaptive
      */
     private static final Protocol protocol = ExtensionLoader.getExtensionLoader(Protocol.class).getAdaptiveExtension();
 
@@ -290,7 +291,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
             return;
         }
         exported = true;
-        // 检测 interfaceName 是否合法
+        // 检测 interfaceName 是否合法，com.alibaba.dubbo.demo.DemoService
         if (interfaceName == null || interfaceName.length() == 0) {
             throw new IllegalStateException("<dubbo:service interface=\"\" /> interface not allow null!");
         }
@@ -357,7 +358,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
             generic = Boolean.FALSE.toString();
         }
 
-        // local 和 stub 在功能应该是一致的，用于配置本地存根
+        // local 和 stub （本地存根）在功能应该是一致的，用于配置本地存根
         if (local != null) {
             if ("true".equals(local)) {
                 local = interfaceName + "Local";
@@ -602,7 +603,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         String host = this.findConfigedHosts(protocolConfig, registryURLs, map);
         Integer port = this.findConfigedPorts(protocolConfig, name, map);
 
-        // 组装 URL
+        // 组装 protocolURL
         // dubbo://10.0.75.1:20890/com.alibaba.dubbo.demo.DemoService?anyhost=true&application=demo-provider
         // &bean.name=com.alibaba.dubbo.demo.DemoService&bind.ip=10.0.75.1&bind.port=20890&dubbo=2.0.2
         // &generic=false&interface=com.alibaba.dubbo.demo.DemoService&methods=sayHello
@@ -650,11 +651,15 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                         }
 
                         // 为服务提供类(ref)生成 Invoker，Dubbo 默认的 ProxyFactory 实现类是 JavassistProxyFactory
+                        // registryURL，增加 export 属性，值为 protocolURL
                         Invoker<?> invoker = proxyFactory.getInvoker(ref, (Class) interfaceClass, registryURL.addParameterAndEncoded(Constants.EXPORT_KEY, url.toFullString()));
                         // DelegateProviderMetaDataInvoker 用于持有 Invoker 和 ServiceConfig
                         DelegateProviderMetaDataInvoker wrapperInvoker = new DelegateProviderMetaDataInvoker(invoker, this);
 
-                        // 导出服务，并生成 Exporter
+                        // 该行代码为服务导出的核心逻辑，通过自适应SPI机制完成的导出服务与注册，并生成 Exporter
+                        // 调用链条为：Protocol$Adaptive#export -> ProtocolListenerWrapper#export -> ProtocolFilterWrapper#export
+                        // -> RegistryProtocol#export ->　RegistryProtocol#doLocalExport -> ProtocolListenerWrapper#export
+                        // -> ProtocolFilterWrapper#buildInvokerChain#export -> DubboProtocol#export　-> RegistryProtocol#register
                         Exporter<?> exporter = protocol.export(wrapperInvoker);
                         exporters.add(exporter);
                     }
@@ -681,6 +686,8 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                     .setPort(0);
             ServiceClassHolder.getInstance().pushServiceClass(getServiceClass(ref));
             // 创建 Invoker，并导出服务，这里的 protocol 会在运行时调用 InjvmProtocol 的 export 方法
+            // InjvmExporter
+            // localURL
             Exporter<?> exporter = protocol.export(
                     proxyFactory.getInvoker(ref, (Class) interfaceClass, local));
             exporters.add(exporter);

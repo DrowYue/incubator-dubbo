@@ -22,6 +22,7 @@ import com.alibaba.dubbo.remoting.RemotingException;
 import com.alibaba.dubbo.remoting.exchange.support.MultiMessage;
 
 /**
+ * 多消息处理器
  *
  * @see MultiMessage
  */

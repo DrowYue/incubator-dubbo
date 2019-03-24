@@ -34,7 +34,7 @@ public class DubboExporter<T> extends AbstractExporter<T> {
      *
      * key: 服务键
      *
-     * 该值实际就是 {@link com.alibaba.dubbo.rpc.protocol.AbstractProtocol#exporterMap}
+     * exporterMap 该值实际就是 {@link com.alibaba.dubbo.rpc.protocol.AbstractProtocol#exporterMap}
      */
     private final Map<String, Exporter<?>> exporterMap;
 

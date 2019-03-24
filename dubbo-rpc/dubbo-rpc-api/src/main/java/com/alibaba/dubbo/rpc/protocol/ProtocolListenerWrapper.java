@@ -32,6 +32,8 @@ import java.util.Collections;
 
 /**
  * ListenerProtocol
+ *
+ * 用于给 Exporter 增加监听器。
  */
 public class ProtocolListenerWrapper implements Protocol {
 
@@ -51,9 +53,11 @@ public class ProtocolListenerWrapper implements Protocol {
 
     @Override
     public <T> Exporter<T> export(Invoker<T> invoker) throws RpcException {
+        // 注册中心协议
         if (Constants.REGISTRY_PROTOCOL.equals(invoker.getUrl().getProtocol())) {
             return protocol.export(invoker);
         }
+
         return new ListenerExporterWrapper<T>(protocol.export(invoker),
                 Collections.unmodifiableList(ExtensionLoader.getExtensionLoader(ExporterListener.class)
                         .getActivateExtension(invoker.getUrl(), Constants.EXPORTER_LISTENER_KEY)));

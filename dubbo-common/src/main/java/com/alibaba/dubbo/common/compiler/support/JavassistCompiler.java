@@ -25,6 +25,7 @@ import javassist.CtNewConstructor;
 import javassist.CtNewMethod;
 import javassist.LoaderClassPath;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -119,6 +120,12 @@ public class JavassistCompiler extends AbstractCompiler {
                 }
             }
         }
+
+        //try {
+        //    cls.writeFile("./" + cls.getSimpleName());
+        //} catch (IOException e) {
+        //    e.printStackTrace();
+        //}
         return cls.toClass(ClassHelper.getCallerClassLoader(getClass()), JavassistCompiler.class.getProtectionDomain());
     }
 
