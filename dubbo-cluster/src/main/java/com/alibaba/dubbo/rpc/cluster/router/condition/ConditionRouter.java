@@ -40,34 +40,68 @@ import java.util.regex.Pattern;
 
 /**
  * ConditionRouter
- *
+ * 条件路由
  */
 public class ConditionRouter implements Router, Comparable<Router> {
 
     private static final Logger logger = LoggerFactory.getLogger(ConditionRouter.class);
+
+    /**
+     * 分组正则匹配，详细见 {@link #parseRule(String)} 方法
+     *
+     * 前 [] 为匹配，分隔符
+     * 后 [] 为匹配，内容
+     */
     private static Pattern ROUTE_PATTERN = Pattern.compile("([&!=,]*)\\s*([^&!=,\\s]+)");
+
+    /**
+     * 路由规则 URL
+     */
     private final URL url;
+
+    /**
+     * 路由规则的优先级，用于排序，优先级越大越靠前执行，可不填，缺省为 0 。
+     */
     private final int priority;
+
+    /**
+     * 当路由结果为空时，是否强制执行，如果不强制执行，路由结果为空的路由规则将自动失效，可不填，缺省为 false 。
+     */
     private final boolean force;
+
+    /**
+     * 消费者匹配条件集合，通过解析【条件表达式 rule 的 `=>` 之前半部分】
+     */
     private final Map<String, MatchPair> whenCondition;
+
+    /**
+     * 提供者地址列表的过滤条件，通过解析【条件表达式 rule 的 `=>` 之后半部分】
+     */
     private final Map<String, MatchPair> thenCondition;
 
     public ConditionRouter(URL url) {
         this.url = url;
+        // 获取 priority 和 force 配置
         this.priority = url.getParameter(Constants.PRIORITY_KEY, 0);
         this.force = url.getParameter(Constants.FORCE_KEY, false);
         try {
+            // 获取路由规则
             String rule = url.getParameterAndDecoded(Constants.RULE_KEY);
             if (rule == null || rule.trim().length() == 0) {
                 throw new IllegalArgumentException("Illegal route rule!");
             }
+            // 定位 => 分隔符
             rule = rule.replace("consumer.", "").replace("provider.", "");
+            // 分别获取服务消费者和提供者匹配规则
             int i = rule.indexOf("=>");
             String whenRule = i < 0 ? null : rule.substring(0, i).trim();
             String thenRule = i < 0 ? rule.trim() : rule.substring(i + 2).trim();
+            // 解析服务消费者匹配规则
             Map<String, MatchPair> when = StringUtils.isBlank(whenRule) || "true".equals(whenRule) ? new HashMap<String, MatchPair>() : parseRule(whenRule);
+            // 解析服务提供者匹配规则
             Map<String, MatchPair> then = StringUtils.isBlank(thenRule) || "false".equals(thenRule) ? null : parseRule(thenRule);
             // NOTE: It should be determined on the business level whether the `When condition` can be empty or not.
+            // 将解析出的匹配规则分别赋值给 whenCondition 和 thenCondition 成员变量
             this.whenCondition = when;
             this.thenCondition = then;
         } catch (ParseException e) {
@@ -77,6 +111,7 @@ public class ConditionRouter implements Router, Comparable<Router> {
 
     private static Map<String, MatchPair> parseRule(String rule)
             throws ParseException {
+        // 定义条件映射集合
         Map<String, MatchPair> condition = new HashMap<String, MatchPair>();
         if (StringUtils.isBlank(rule)) {
             return condition;
@@ -85,6 +120,19 @@ public class ConditionRouter implements Router, Comparable<Router> {
         MatchPair pair = null;
         // Multiple values
         Set<String> values = null;
+
+        // 通过正则表达式匹配路由规则，ROUTE_PATTERN = ([&!=,]*)\s*([^&!=,\s]+)
+        // 这个表达式看起来不是很好理解，第一个括号内的表达式用于匹配"&", "!", "=" 和 "," 等符号。
+        // 第二括号内的用于匹配英文字母，数字等字符。举个例子说明一下：
+        //    host = 2.2.2.2 & host != 1.1.1.1 & method = hello
+        // 匹配结果如下：
+        //     括号一      括号二
+        // 1.  null       host
+        // 2.   =         2.2.2.2
+        // 3.   &         host
+        // 4.   !=        1.1.1.1
+        // 5.   &         method
+        // 6.   =         hello
         final Matcher matcher = ROUTE_PATTERN.matcher(rule);
         while (matcher.find()) { // Try to match one by one
             String separator = matcher.group(1);
@@ -142,6 +190,10 @@ public class ConditionRouter implements Router, Comparable<Router> {
         return condition;
     }
 
+    /**
+     *  服务路由
+     *
+     */
     @Override
     public <T> List<Invoker<T>> route(List<Invoker<T>> invokers, URL url, Invocation invocation)
             throws RpcException {
@@ -149,19 +201,30 @@ public class ConditionRouter implements Router, Comparable<Router> {
             return invokers;
         }
         try {
+            // 先对服务消费者条件进行匹配，如果匹配失败，表明服务消费者 url 不符合匹配规则，
+            // 无需进行后续匹配，直接返回 Invoker 列表即可。比如下面的规则：
+            //     host = 10.20.153.10 => host = 10.0.0.10
+            // 这条路由规则希望 IP 为 10.20.153.10 的服务消费者调用 IP 为 10.0.0.10 机器上的服务。
+            // 当消费者 ip 为 10.20.153.11 时，matchWhen 返回 false，表明当前这条路由规则不适用于
+            // 当前的服务消费者，此时无需再进行后续匹配，直接返回即可。
             if (!matchWhen(url, invocation)) {
                 return invokers;
             }
             List<Invoker<T>> result = new ArrayList<Invoker<T>>();
+            // 服务提供者匹配条件未配置，表明对指定的服务消费者禁用服务，也就是服务消费者在黑名单中
             if (thenCondition == null) {
                 logger.warn("The current consumer in the service blacklist. consumer: " + NetUtils.getLocalHost() + ", service: " + url.getServiceKey());
                 return result;
             }
+            // 这里可以简单的把 Invoker 理解为服务提供者，现在使用服务提供者匹配规则对
+            // Invoker 列表进行匹配
             for (Invoker<T> invoker : invokers) {
                 if (matchThen(invoker.getUrl(), url)) {
                     result.add(invoker);
                 }
             }
+            // 返回匹配结果，如果 result 为空列表，且 force = true，表示强制返回空列表，
+            // 否则路由结果为空的路由规则将自动失效
             if (!result.isEmpty()) {
                 return result;
             } else if (force) {
@@ -189,10 +252,14 @@ public class ConditionRouter implements Router, Comparable<Router> {
     }
 
     boolean matchWhen(URL url, Invocation invocation) {
+        // 服务消费者条件为 null 或空，均返回 true，比如：
+        //     => host != 172.22.3.91
+        // 表示所有的服务消费者都不得调用 IP 为 172.22.3.91 的机器上的服务
         return whenCondition == null || whenCondition.isEmpty() || matchCondition(whenCondition, url, null, invocation);
     }
 
     private boolean matchThen(URL url, URL param) {
+        // 服务提供者条件为 null 或空，表示禁用服务
         return !(thenCondition == null || thenCondition.isEmpty()) && matchCondition(thenCondition, url, param, null);
     }
 

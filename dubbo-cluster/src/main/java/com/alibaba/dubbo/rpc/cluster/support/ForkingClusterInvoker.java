@@ -40,6 +40,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * <a href="http://en.wikipedia.org/wiki/Fork_(topology)">Fork</a>
  *
+ * ForkingClusterInvoker 会在运行时通过线程池创建多个线程，并发调用多个服务提供者。只要有一个服务提供者成功返回了结果，doInvoke 方法就会立即结束运行。
+ * ForkingClusterInvoker 的应用场景是在一些对实时性要求比较高读操作（注意是读操作，并行写操作可能不安全）下使用，但这将会耗费更多的资源。
+ *
  */
 public class ForkingClusterInvoker<T> extends AbstractClusterInvoker<T> {
 
