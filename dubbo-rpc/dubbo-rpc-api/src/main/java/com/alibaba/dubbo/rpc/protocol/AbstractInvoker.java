@@ -39,6 +39,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * AbstractInvoker.
+ *
+ *  抽象 Invoker 类
+ *
  */
 public abstract class AbstractInvoker<T> implements Invoker<T> {
 
@@ -131,13 +134,17 @@ public abstract class AbstractInvoker<T> implements Invoker<T> {
         }
 
         RpcInvocation invocation = (RpcInvocation) inv;
+        // 设置 Invoker
         invocation.setInvoker(this);
+        // 设置 attachment
         if (attachment != null && attachment.size() > 0) {
             invocation.addAttachmentsIfAbsent(attachment);
         }
         Map<String, String> contextAttachments = RpcContext.getContext().getAttachments();
         if (contextAttachments != null && contextAttachments.size() != 0) {
             /**
+             * 添加 contextAttachments 到 RpcInvocation#attachment 变量中
+             *
              * invocation.addAttachmentsIfAbsent(context){@link RpcInvocation#addAttachmentsIfAbsent(Map)}should not be used here,
              * because the {@link RpcContext#setAttachment(String, String)} is passed in the Filter when the call is triggered
              * by the built-in retry mechanism of the Dubbo. The attachment to update RpcContext will no longer work, which is
@@ -145,13 +152,16 @@ public abstract class AbstractInvoker<T> implements Invoker<T> {
              */
             invocation.addAttachments(contextAttachments);
         }
+        // 设置 `async=true` ，若为异步方法
         if (getUrl().getMethodParameter(invocation.getMethodName(), Constants.ASYNC_KEY, false)) {
+            // 设置异步信息到 RpcInvocation#attachment 中
             invocation.setAttachment(Constants.ASYNC_KEY, Boolean.TRUE.toString());
         }
         RpcUtils.attachInvocationIdIfAsync(getUrl(), invocation);
 
 
         try {
+            // 抽象方法，由子类实现
             return doInvoke(invocation);
         } catch (InvocationTargetException e) { // biz exception
             Throwable te = e.getTargetException();
