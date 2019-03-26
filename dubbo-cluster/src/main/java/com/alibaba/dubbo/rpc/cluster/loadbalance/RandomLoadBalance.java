@@ -26,6 +26,8 @@ import java.util.Random;
 /**
  * random load balance.
  *
+ * 加权随机负载均衡
+ *
  */
 public class RandomLoadBalance extends AbstractLoadBalance {
 
@@ -38,6 +40,8 @@ public class RandomLoadBalance extends AbstractLoadBalance {
         int length = invokers.size(); // Number of invokers
         int totalWeight = 0; // The sum of weights
         boolean sameWeight = true; // Every invoker has the same weight?
+        // 下面这个循环有两个作用，第一是计算总权重 totalWeight，
+        // 第二是检测每个服务提供者的权重是否相同
         for (int i = 0; i < length; i++) {
             int weight = getWeight(invokers.get(i), invocation);
             totalWeight += weight; // Sum
@@ -46,10 +50,11 @@ public class RandomLoadBalance extends AbstractLoadBalance {
                 sameWeight = false;
             }
         }
+        // 下面的 if 分支主要用于获取随机数，并计算随机数落在哪个区间上
         if (totalWeight > 0 && !sameWeight) {
-            // If (not every invoker has the same weight & at least one invoker's weight>0), select randomly based on totalWeight.
+            // 随机获取一个 [0, totalWeight) 区间内的数字
             int offset = random.nextInt(totalWeight);
-            // Return a invoker based on the random value.
+            // 循环让 offset 数减去服务提供者权重值，当 offset 小于0时，返回相应的 Invoker
             for (int i = 0; i < length; i++) {
                 offset -= getWeight(invokers.get(i), invocation);
                 if (offset < 0) {
@@ -57,7 +62,7 @@ public class RandomLoadBalance extends AbstractLoadBalance {
                 }
             }
         }
-        // If all invokers have the same weight value or totalWeight=0, return evenly.
+        // 如果所有服务提供者权重值相同，此时直接随机返回一个即可
         return invokers.get(random.nextInt(length));
     }
 

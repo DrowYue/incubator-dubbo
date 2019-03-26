@@ -27,6 +27,8 @@ import java.util.Random;
 /**
  * LeastActiveLoadBalance
  *
+ * 基于加权最小活跃数的负载均衡
+ *
  */
 public class LeastActiveLoadBalance extends AbstractLoadBalance {
 

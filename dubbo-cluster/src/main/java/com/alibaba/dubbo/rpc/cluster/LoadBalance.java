@@ -31,6 +31,11 @@ import java.util.List;
  * <p>
  * <a href="http://en.wikipedia.org/wiki/Load_balancing_(computing)">Load-Balancing</a>
  *
+ * 基于权重随机算法的 RandomLoadBalance
+ * 基于最少活跃调用数算法的 LeastActiveLoadBalance
+ * 基于 hash 一致性的 ConsistentHashLoadBalance
+ * 基于加权轮询算法的 RoundRobinLoadBalance
+ *
  * @see com.alibaba.dubbo.rpc.cluster.Cluster#join(Directory)
  */
 @SPI(RandomLoadBalance.NAME)
