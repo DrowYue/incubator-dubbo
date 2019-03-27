@@ -39,7 +39,7 @@ public class HeaderExchanger implements Exchanger {
         // 这里包含了多个调用，分别如下：
         // 1. 创建 HeaderExchangeHandler 对象
         // 2. 创建 DecodeHandler 对象
-        // 3. 通过 Transporters 构建 Client 实例
+        // 3. 通过 Transporters#connect，调用 NettyTransporter#connect
         // 4. 创建 HeaderExchangeClient 对象
         return new HeaderExchangeClient(Transporters.connect(url, new DecodeHandler(new HeaderExchangeHandler(handler))), true);
     }

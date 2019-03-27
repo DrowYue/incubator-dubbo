@@ -30,6 +30,7 @@ import java.util.concurrent.Semaphore;
 
 /**
  * ThreadLimitInvokerFilter
+ * 服务提供者，每服务的每方法最大可并行执行请求数
  */
 @Activate(group = Constants.PROVIDER, value = Constants.EXECUTES_KEY)
 public class ExecuteLimitFilter implements Filter {

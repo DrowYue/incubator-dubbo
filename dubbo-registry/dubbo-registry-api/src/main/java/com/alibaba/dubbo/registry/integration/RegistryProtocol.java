@@ -327,7 +327,7 @@ public class RegistryProtocol implements Protocol {
     public <T> Invoker<T> refer(Class<T> type, URL url) throws RpcException {
         // 取 registry 参数值，并将其设置为协议头
         url = url.setProtocol(url.getParameter(Constants.REGISTRY_KEY, Constants.DEFAULT_REGISTRY)).removeParameter(Constants.REGISTRY_KEY);
-        // 获取注册中心实例
+        // 获取注册中心实例（自适应类 ZookeeperRegistryFactory#getRegistry，返回 FailbackRegistry）
         Registry registry = registryFactory.getRegistry(url);
         if (RegistryService.class.equals(type)) {
             return proxyFactory.getInvoker((T) registry, type, url);
@@ -364,7 +364,7 @@ public class RegistryProtocol implements Protocol {
         // 生成服务消费者链接
         URL subscribeUrl = new URL(Constants.CONSUMER_PROTOCOL, parameters.remove(Constants.REGISTER_IP_KEY), 0, type.getName(), parameters);
 
-        // 注册服务消费者，在 consumers 目录下新节点
+        // 创建 ZookeeperRegistry 并注册服务消费者，在 consumers 目录下新节点
         if (!Constants.ANY_VALUE.equals(url.getServiceInterface())
                 && url.getParameter(Constants.REGISTER_KEY, true)) {
             registry.register(subscribeUrl.addParameters(Constants.CATEGORY_KEY, Constants.CONSUMERS_CATEGORY,
@@ -372,12 +372,14 @@ public class RegistryProtocol implements Protocol {
         }
 
         // 订阅 providers、configurators、routers 等节点数据
+        // RegistryDirectory#subscribe 将完成 NettyClient、DubboInvoker 的创建
         directory.subscribe(subscribeUrl.addParameter(Constants.CATEGORY_KEY,
                 Constants.PROVIDERS_CATEGORY
                         + "," + Constants.CONFIGURATORS_CATEGORY
                         + "," + Constants.ROUTERS_CATEGORY));
 
-        // 一个注册中心可能有多个服务提供者，因此这里需要将多个服务提供者合并为一个
+        // 创建集群Invoker
+        // 一个注册中心可能有多个服务提供者，因此这里需要将多个服务提供者合并为一个，FailoverClusterInvoker
         Invoker invoker = cluster.join(directory);
         ProviderConsumerRegTable.registerConsumer(invoker, url, subscribeUrl, directory);
         return invoker;

@@ -176,6 +176,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
 
     public void subscribe(URL url) {
         setConsumerUrl(url);
+        // 订阅注册中心节点，并将自身设为 listener
         registry.subscribe(url, this);
     }
 
@@ -200,6 +201,11 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
         }
     }
 
+    /**
+     * 订阅完成后，将调用该方法
+     * @param urls：provider url
+     * @return void
+     */
     @Override
     public synchronized void notify(List<URL> urls) {
         // 服务提供者 url
@@ -291,7 +297,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
                 return;
             }
 
-            // 将 url 转成 Invoker
+            // *重要* 将 url 转成 Invoker，根据 provider 的不同协议生成对应协议的 Invoker
             Map<String, Invoker<T>> newUrlInvokerMap = toInvokers(invokerUrls);// Translate url list to Invoker map
             // 将 newUrlInvokerMap 转成方法名到 Invoker 列表的映射
             Map<String, List<Invoker<T>>> newMethodInvokerMap = toMethodInvokers(newUrlInvokerMap); // Change method name to map Invoker Map
@@ -300,8 +306,9 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
                 logger.error(new IllegalStateException("urls to invokers error .invokerUrls.size :" + invokerUrls.size() + ", invoker.size :0. urls :" + invokerUrls.toString()));
                 return;
             }
-            // 合并多个组的 Invoker
+            // 合并多个组的 Invoker。refresh 完成后更新 methodInvokerMap
             this.methodInvokerMap = multiGroup ? toMergeMethodInvokerMap(newMethodInvokerMap) : newMethodInvokerMap;
+            // refresh 完成后更新 urlInvokerMap
             this.urlInvokerMap = newUrlInvokerMap;
             try {
                 // 销毁无用 Invoker，避免服务消费者调用已下线的服务的服务
@@ -458,6 +465,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
                         enabled = url.getParameter(Constants.ENABLED_KEY, true);
                     }
                     if (enabled) {
+                        // *重要*
                         // 调用 protocol.refer 获取 Invoker
                         invoker = new InvokerDelegate<T>(protocol.refer(serviceType, url), url, providerUrl);
                     }

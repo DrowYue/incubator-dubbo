@@ -36,12 +36,14 @@ public class ConsumerContextFilter implements Filter {
 
     @Override
     public Result invoke(Invoker<?> invoker, Invocation invocation) throws RpcException {
+        // 设置 RpcContext 对象
         RpcContext.getContext()
                 .setInvoker(invoker)
                 .setInvocation(invocation)
                 .setLocalAddress(NetUtils.getLocalHost(), 0)
-                .setRemoteAddress(invoker.getUrl().getHost(),
-                        invoker.getUrl().getPort());
+                .setRemoteAddress(invoker.getUrl().getHost(), invoker.getUrl().getPort());
+
+        // 设置 RpcInvocation 对象的 `invoker` 属性
         if (invocation instanceof RpcInvocation) {
             ((RpcInvocation) invocation).setInvoker(invoker);
         }
@@ -50,6 +52,7 @@ public class ConsumerContextFilter implements Filter {
             RpcContext.getServerContext().setAttachments(result.getAttachments());
             return result;
         } finally {
+            // 清理隐式参数集合
             RpcContext.getContext().clearAttachments();
         }
     }

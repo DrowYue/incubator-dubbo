@@ -153,6 +153,7 @@ public class ZookeeperRegistry extends FailbackRegistry {
     @Override
     protected void doSubscribe(final URL url, final NotifyListener listener) {
         try {
+            // 处理所有 Service 层的发起订阅，例如监控中心的订阅
             if (Constants.ANY_VALUE.equals(url.getServiceInterface())) {
                 String root = toRootPath();
                 ConcurrentMap<NotifyListener, ChildListener> listeners = zkListeners.get(url);
@@ -187,6 +188,7 @@ public class ZookeeperRegistry extends FailbackRegistry {
                                 Constants.CHECK_KEY, String.valueOf(false)), listener);
                     }
                 }
+            // 处理指定 Service 层的发起订阅，例如服务消费者的订阅
             } else {
                 List<URL> urls = new ArrayList<URL>();
                 for (String path : toCategoriesPath(url)) {
@@ -200,6 +202,7 @@ public class ZookeeperRegistry extends FailbackRegistry {
                         listeners.putIfAbsent(listener, new ChildListener() {
                             @Override
                             public void childChanged(String parentPath, List<String> currentChilds) {
+                                // 变更时，调用 `#notify(...)` 方法，回调 NotifyListener
                                 ZookeeperRegistry.this.notify(url, listener, toUrlsWithEmpty(url, parentPath, currentChilds));
                             }
                         });
@@ -211,6 +214,7 @@ public class ZookeeperRegistry extends FailbackRegistry {
                         urls.addAll(toUrlsWithEmpty(url, path, children));
                     }
                 }
+                // 首次全量数据获取完成时，调用 `#notify(...)` 方法，回调 NotifyListener（RegistryDirectory）
                 notify(url, listener, urls);
             }
         } catch (Throwable e) {

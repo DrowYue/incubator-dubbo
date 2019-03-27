@@ -351,7 +351,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         // 存储 attributes 到系统上下文中
         StaticContext.getSystemContext().putAll(attributes);
 
-        // 创建代理类，引用服务
+        // 1、创建代理类，引用服务。构建以及合并 Invoker 实例
         ref = createProxy(map);
 
         // 根据服务名，ReferenceConfig，代理类构建 ConsumerModel，
@@ -429,9 +429,12 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
 
             // 单个注册中心或服务提供者(服务直连，下同)
             if (urls.size() == 1) {
-                // 调用 RegistryProtocol 的 refer 构建 Invoker 实例，protocol = registry
+                // 2、
                 // 在服务提供方，Invoker 用于调用服务提供类
                 // 在服务消费方，Invoker 用于执行远程调用
+                // 调用 RegistryProtocol 的 refer 构建 Invoker 实例，protocol = registry
+                // 调用链路：ProtocolListenerWrapper、ProtocolFilterWrapper、RegistryProtocol
+                // 此处最终 Invoker 类型为 MockClusterInvoker
                 invoker = refprotocol.refer(interfaceClass, urls.get(0));
             // 多个注册中心或多个服务提供者，或者两者混合
             } else {
@@ -474,7 +477,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
             logger.info("Refer dubbo service " + interfaceClass.getName() + " from url " + invoker.getUrl());
         }
 
-        // 生成代理类
+        // 3、生成代理类
         return (T) proxyFactory.getProxy(invoker);
     }
 

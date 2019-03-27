@@ -28,6 +28,7 @@ import com.alibaba.dubbo.rpc.RpcStatus;
 
 /**
  * LimitInvokerFilter
+ * 每服务消费者，每服务的每方法最大并发调用数
  */
 @Activate(group = Constants.CONSUMER, value = Constants.ACTIVES_KEY)
 public class ActiveLimitFilter implements Filter {

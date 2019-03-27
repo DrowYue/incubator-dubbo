@@ -106,7 +106,7 @@ public class DubboInvoker<T> extends AbstractInvoker<T> {
                 // 暂时返回一个空结果
                 return new RpcResult();
 
-            // 同步调用，，由框架自身调用 ResponseFuture 的 get 方法
+            // 同步调用，由框架自身调用 ResponseFuture 的 get 方法
             } else {
                 RpcContext.getContext().setFuture(null);
                 return (Result) currentClient.request(inv, timeout).get();

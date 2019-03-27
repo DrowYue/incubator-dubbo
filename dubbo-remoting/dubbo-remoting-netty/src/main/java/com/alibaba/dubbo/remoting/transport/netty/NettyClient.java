@@ -53,9 +53,11 @@ public class NettyClient extends AbstractClient {
             Constants.DEFAULT_IO_THREADS);
     private ClientBootstrap bootstrap;
 
+    // 这里的 Channel 全限定名称为 org.jboss.netty.channel.Channel
     private volatile Channel channel; // volatile, please copy reference to use
 
     public NettyClient(final URL url, final ChannelHandler handler) throws RemotingException {
+        // 包装 ChannelHandler
         super(url, wrapChannelHandler(url, handler));
     }
 
@@ -72,7 +74,7 @@ public class NettyClient extends AbstractClient {
         bootstrap.setOption("tcpNoDelay", true);
         bootstrap.setOption("connectTimeoutMillis", getConnectTimeout());
 
-        // 创建 NettyHandler 对象
+        // 创建 NettyHandler 对象，持有 ChannelHandler 对象
         final NettyHandler nettyHandler = new NettyHandler(getUrl(), this);
 
         // 设置责任链路
@@ -176,6 +178,7 @@ public class NettyClient extends AbstractClient {
         Channel c = channel;
         if (c == null || !c.isConnected())
             return null;
+        // 获取一个 NettyChannel 类型对象
         return NettyChannel.getOrAddChannel(c, getUrl(), this);
     }
 

@@ -83,6 +83,14 @@ public class NettyHandler extends SimpleChannelHandler {
         }
     }
 
+    /**
+     * NettyHandler#messageReceived(ChannelHandlerContext, MessageEvent)
+     *   —> AbstractPeer#received(Channel, Object)
+     *     —> MultiMessageHandler#received(Channel, Object)
+     *       —> HeartbeatHandler#received(Channel, Object)
+     *         —> AllChannelHandler#received(Channel, Object)
+     *           —> ExecutorService#execute(Runnable)    // 由线程池执行后续的调用逻辑
+     */
     @Override
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
         NettyChannel channel = NettyChannel.getOrAddChannel(ctx.getChannel(), url, handler);

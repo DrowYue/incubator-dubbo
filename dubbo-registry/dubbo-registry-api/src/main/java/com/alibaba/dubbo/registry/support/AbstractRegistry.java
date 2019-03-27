@@ -410,7 +410,11 @@ public abstract class AbstractRegistry implements Registry {
             String category = entry.getKey();
             List<URL> categoryList = entry.getValue();
             categoryNotified.put(category, categoryList);
+
+            // 本地缓存
             saveProperties(url);
+
+            // 通知 listener （RegistryDirectory#notify）
             listener.notify(categoryList);
         }
     }
