@@ -327,7 +327,7 @@ public class ExtensionLoader<T> {
             // 获取默认的拓展实现类
             return getDefaultExtension();
         }
-        // Holder，顾名思义，用于持有目标对象
+        // Holder，volatile 防止指令重排序
         Holder<Object> holder = cachedInstances.get(name);
         if (holder == null) {
             cachedInstances.putIfAbsent(name, new Holder<Object>());
@@ -540,8 +540,10 @@ public class ExtensionLoader<T> {
                 EXTENSION_INSTANCES.putIfAbsent(clazz, clazz.newInstance());
                 instance = (T) EXTENSION_INSTANCES.get(clazz);
             }
-            // 向实例中注入依赖
+            // Dubbo IOC，向实例中注入依赖
             injectExtension(instance);
+
+            // Dubbo AOP, 添加包装类
             Set<Class<?>> wrapperClasses = cachedWrapperClasses;
             if (wrapperClasses != null && !wrapperClasses.isEmpty()) {
                 // 循环创建 Wrapper 实例
@@ -696,7 +698,8 @@ public class ExtensionLoader<T> {
                             String name = null;
                             int i = line.indexOf('=');
                             if (i > 0) {
-                                // 以等于号 = 为界，截取键与值
+                                // name: key
+                                // line: 实现类类名
                                 name = line.substring(0, i).trim();
                                 line = line.substring(i + 1).trim();
                             }
@@ -822,7 +825,7 @@ public class ExtensionLoader<T> {
     private Class<?> getAdaptiveExtensionClass() {
         // 通过 SPI 获取所有的拓展类
         getExtensionClasses();
-        // 检查缓存，若缓存不为空，则直接返回缓存
+        // 检查缓存，是否存在 @Adaptive 标记在类上的情况
         if (cachedAdaptiveClass != null) {
             return cachedAdaptiveClass;
         }
